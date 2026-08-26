@@ -1,0 +1,50 @@
+
+import socket
+import sys
+from pathlib import Path
+
+
+def print_usage(script_name: str) -> None:
+    print("[*] Forward DNS Lookup")
+    print(f"[*] Usage\t: {script_name} <Enter your target domain, ie google.com>")
+
+
+def main() -> int:
+    if len(sys.argv) < 2:
+        print_usage(Path(sys.argv[0]).name)
+        return 0
+
+    domain = sys.argv[1].strip()
+    if not domain:
+        print_usage(Path(sys.argv[0]).name)
+        return 0
+
+    list_path = Path("list.txt")
+    if not list_path.exists():
+        print("[!] list.txt not found in current directory.")
+        return 1
+
+    output_path = Path(f"{domain}.txt")
+
+    with list_path.open("r", encoding="utf-8") as infile, output_path.open(
+        "a", encoding="utf-8"
+    ) as outfile:
+        for raw_name in infile:
+            name = raw_name.strip()
+            if not name:
+                continue
+
+            fqdn = f"{name}.{domain}"
+            try:
+                _, _, ip_addresses = socket.gethostbyname_ex(fqdn)
+            except socket.gaierror:
+                continue
+
+            for ip in ip_addresses:
+                outfile.write(f"{fqdn} {ip}\n")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
